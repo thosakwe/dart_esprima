@@ -1,0 +1,10 @@
+analyzer:
+  exclude:
+  - test/**/*.dart
+  - test/*.dart
+  strong-mode: true
+linter:
+  rules:
+  - avoid_empty_else
+  - empty_catches
+  - empty_statements
