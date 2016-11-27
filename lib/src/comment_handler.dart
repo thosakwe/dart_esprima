@@ -1,4 +1,4 @@
-import 'syntax.dart';
+import 'syntax.dart' as syntax;
 
 class Comment {
   static const String BLOCK = 'BlockComment';
@@ -36,7 +36,7 @@ class CommentHandler {
   void insertInnerComments(node, metadata) {
     //  innnerComments for properties empty block
     //  `function a() {/** comments **\/}`
-    if (node.type == Syntax.BlockStatement && node.body.length == 0) {
+    if (node.type == syntax.BlockStatement && node.body.length == 0) {
       final List<Comment> innerComments = [];
 
       for (int i = leading.length - 1; i >= 0; i--) {
@@ -128,7 +128,7 @@ class CommentHandler {
 
   void visitNode(node, metadata) {
     // Todo: Use an 'is' expression ;)
-    if (node.type == Syntax.Program && node.body.isNotEmpty) return;
+    if (node.type == syntax.Program && node.body.isNotEmpty) return;
 
     insertInnerComments(node, metadata);
 

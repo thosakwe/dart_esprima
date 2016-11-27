@@ -1,3 +1,2 @@
-abstract class SourceType {
-  static const String MODULE = 'module';
-}
+const String MODULE = 'module';
+const String SCRIPT = 'script';

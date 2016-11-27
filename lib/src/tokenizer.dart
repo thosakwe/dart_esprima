@@ -7,7 +7,8 @@ import 'scanner.dart'
         ScannedTokenLocation,
         ScannedTokenLocationPart,
         Scanner;
-import 'token.dart' show Token, TokenName;
+import 'token.dart' show TokenName;
+import 'token.dart' as token_type;
 
 const List<String> _beforeFunction = const [
   '(', '{', '[', 'in', 'typeof', 'instanceof', 'new',
@@ -65,7 +66,7 @@ class Reader {
   }
 
   void push(ScannedToken token) {
-    if (token.type == Token.Punctuator || token.type == Token.Keyword) {
+    if (token.type == token_type.Punctuator || token.type == token_type.Keyword) {
       if (token.value == '{')
         curly = values.length;
       else if (token.value == '(') paren = values.length;

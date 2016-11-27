@@ -1,13 +1,11 @@
-abstract class JSXSyntax  {
-  static const String JSXAttribute = 'JSXAttribute';
-  static const String JSXClosingElement = 'JSXClosingElement';
-  static const String JSXElement = 'JSXElement';
-  static const String JSXEmptyExpression = 'JSXEmptyExpression';
-  static const String JSXExpressionContainer = 'JSXExpressionContainer';
-  static const String JSXIdentifier = 'JSXIdentifier';
-  static const String JSXMemberExpression = 'JSXMemberExpression';
-  static const String JSXNamespacedName = 'JSXNamespacedName';
-  static const String JSXOpeningElement = 'JSXOpeningElement';
-  static const String JSXSpreadAttribute = 'JSXSpreadAttribute';
-  static const String JSXText = 'JSXText';
-}
+const String JSXAttribute = 'JSXAttribute';
+const String JSXClosingElement = 'JSXClosingElement';
+const String JSXElement = 'JSXElement';
+const String JSXEmptyExpression = 'JSXEmptyExpression';
+const String JSXExpressionContainer = 'JSXExpressionContainer';
+const String JSXIdentifier = 'JSXIdentifier';
+const String JSXMemberExpression = 'JSXMemberExpression';
+const String JSXNamespacedName = 'JSXNamespacedName';
+const String JSXOpeningElement = 'JSXOpeningElement';
+const String JSXSpreadAttribute = 'JSXSpreadAttribute';
+const String JSXText = 'JSXText';

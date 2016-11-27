@@ -1,8 +1,8 @@
 import 'assert.dart';
-import 'character.dart' show Character;
+import 'character.dart' as character;
 import 'error_handler.dart';
-import 'messages.dart';
-import 'token.dart';
+import 'messages.dart' as messages;
+import 'token.dart' as token_type;
 
 const String _HEX = '0123456789abcdef';
 const String _OCTAL = '01234567';
@@ -92,12 +92,12 @@ class Scanner {
 
   void throwUnexpectedToken([String message]) {
     errorHandler.throwError(index, lineNumber, index - lineStart + 1,
-        message ?? Messages.UnexpectedTokenIllegal);
+        message ?? messages.UnexpectedTokenIllegal);
   }
 
   tolerateUnexpectedToken() {
     errorHandler.tolerateError(index, lineNumber, index - lineStart + 1,
-        Messages.UnexpectedTokenIllegal);
+        messages.UnexpectedTokenIllegal);
   }
 
   /// ECMA-262 11.4 Comments
@@ -116,7 +116,7 @@ class Scanner {
     while (!eof()) {
       final ch = source.codeUnitAt(index);
 
-      if (Character.isLineTerminator(ch)) {
+      if (character.isLineTerminator(ch)) {
         if (trackComment) {
           loc.end = new ScannedTokenLocationPart(
               line: lineNumber, column: index - lineStart - 1);
@@ -157,7 +157,7 @@ class Scanner {
 
     while (!eof()) {
       final ch = source.codeUnitAt(index);
-      if (Character.isLineTerminator(ch)) {
+      if (character.isLineTerminator(ch)) {
         if (ch == 0x0D && source.codeUnitAt(index + 1) == 0x0A) index++;
 
         lineNumber++;
@@ -210,9 +210,9 @@ class Scanner {
     while (!eof()) {
       int ch = source.codeUnitAt(index);
 
-      if (Character.isWhitespace(ch))
+      if (character.isWhitespace(ch))
         index++;
-      else if (Character.isLineTerminator(ch)) {
+      else if (character.isLineTerminator(ch)) {
         index++;
 
         if (ch == 0x0D && source.codeUnitAt(index) == 0x0A) index++;
@@ -339,7 +339,7 @@ class Scanner {
     int code = 0;
 
     for (int i = 0; i < len; i++) {
-      if (!eof() && Character.isHexDigit(source.codeUnitAt(index))) {
+      if (!eof() && character.isHexDigit(source.codeUnitAt(index))) {
         code = code * 16 + hexValue(source[index++]);
       } else {
         return '';
@@ -359,14 +359,14 @@ class Scanner {
     while (!eof()) {
       ch = source[index++];
 
-      if (!Character.isHexDigit(ch.codeUnitAt(0))) break;
+      if (!character.isHexDigit(ch.codeUnitAt(0))) break;
 
       code = code * 16 + hexValue(ch);
     }
 
     if (code > 0x10FFFF || ch != '}') throwUnexpectedToken();
 
-    return Character.fromCodePoint(code);
+    return character.fromCodePoint(code);
   }
 
   String getIdentifier() {
@@ -385,7 +385,7 @@ class Scanner {
         return getComplexIdentifier();
       }
 
-      if (Character.isIdentifierPart(ch)) {
+      if (character.isIdentifierPart(ch)) {
         index++;
       } else {
         break;
@@ -397,7 +397,7 @@ class Scanner {
 
   String getComplexIdentifier() {
     int cp = codePointAt(index);
-    String id = Character.fromCodePoint(cp);
+    String id = character.fromCodePoint(cp);
     index += id.length;
 
     // '\u' (U+005C, U+0075) denotes an escaped character.
@@ -416,7 +416,7 @@ class Scanner {
         ch = scanHexEscape('u');
         cp = ch.codeUnitAt(0);
 
-        if (ch.isEmpty || ch == '\\' || !Character.isIdentifierStart(cp)) {
+        if (ch.isEmpty || ch == '\\' || !character.isIdentifierStart(cp)) {
           throwUnexpectedToken();
         }
       }
@@ -427,9 +427,9 @@ class Scanner {
     while (!eof()) {
       cp = codePointAt(index);
 
-      if (!Character.isIdentifierPart(cp)) break;
+      if (!character.isIdentifierPart(cp)) break;
 
-      ch = Character.fromCodePoint(cp);
+      ch = character.fromCodePoint(cp);
       id += ch;
       index += ch.length;
 
@@ -448,7 +448,7 @@ class Scanner {
           ch = scanHexEscape('u');
           cp = ch.codeUnitAt(0);
 
-          if (ch.isEmpty || ch == '\\' || !Character.isIdentifierPart(cp))
+          if (ch.isEmpty || ch == '\\' || !character.isIdentifierPart(cp))
             throwUnexpectedToken();
         }
 
@@ -464,7 +464,7 @@ class Scanner {
     bool octal = ch != '0';
     int code = octalValue(ch);
 
-    if (!eof() && Character.isOctalDigit(source.codeUnitAt(index))) {
+    if (!eof() && character.isOctalDigit(source.codeUnitAt(index))) {
       octal = true;
       code = code * 8 + octalValue(source[index++]);
 
@@ -472,7 +472,7 @@ class Scanner {
       // with 0, 1, 2, 3
       if ('0123'.indexOf(ch) >= 0 &&
           !eof() &&
-          Character.isOctalDigit(source.codeUnitAt(index))) {
+          character.isOctalDigit(source.codeUnitAt(index))) {
         code = code * 8 + octalValue(source[index++]);
       }
     }
@@ -493,15 +493,15 @@ class Scanner {
     // There is no keyword or literal with only one character.
     // Thus, it must be an identifier.
     if (id.length == 1)
-      type = Token.Identifier;
+      type = token_type.Identifier;
     else if (isKeyword(id))
-      type = Token.Keyword;
+      type = token_type.Keyword;
     else if (id == 'null')
-      type = Token.NullLiteral;
+      type = token_type.NullLiteral;
     else if (['true', 'false'].contains(id))
-      type = Token.BooleanLiteral;
+      type = token_type.BooleanLiteral;
     else
-      type = Token.Identifier;
+      type = token_type.Identifier;
 
     return new ScannedToken(
         type: type,
@@ -515,7 +515,7 @@ class Scanner {
   /// ECMA-262 11.7 Punctuators
   ScannedToken scanPunctuator() {
     final ScannedToken token = new ScannedToken(
-        type: Token.Punctuator,
+        type: token_type.Punctuator,
         value: '',
         lineNumber: lineNumber,
         lineStart: lineStart,
@@ -621,18 +621,18 @@ class Scanner {
     String number = '';
 
     while (!eof()) {
-      if (!Character.isHexDigit(source.codeUnitAt(index))) break;
+      if (!character.isHexDigit(source.codeUnitAt(index))) break;
 
       number += source[index++];
     }
 
     if (number.isEmpty) throwUnexpectedToken();
 
-    if (Character.isIdentifierStart(source.codeUnitAt(index)))
+    if (character.isIdentifierStart(source.codeUnitAt(index)))
       throwUnexpectedToken();
 
     return new ScannedToken(
-        type: Token.NumericLiteral,
+        type: token_type.NumericLiteral,
         value: int.parse('0x$number', radix: 16),
         lineNumber: lineNumber,
         lineStart: lineStart,
@@ -657,12 +657,12 @@ class Scanner {
     if (!eof()) {
       int ch = source.codeUnitAt(index);
 
-      if (Character.isIdentifierStart(ch) || Character.isDecimalDigit(ch))
+      if (character.isIdentifierStart(ch) || character.isDecimalDigit(ch))
         throwUnexpectedToken();
     }
 
     return new ScannedToken(
-        type: Token.NumericLiteral,
+        type: token_type.NumericLiteral,
         value: int.parse(number, radix: 2),
         lineNumber: lineNumber,
         start: start,
@@ -673,7 +673,7 @@ class Scanner {
     String number = '';
     bool octal = false;
 
-    if (Character.isOctalDigit(prefix.codeUnitAt(0))) {
+    if (character.isOctalDigit(prefix.codeUnitAt(0))) {
       octal = true;
       number = '0' + source[index++];
     } else {
@@ -681,7 +681,7 @@ class Scanner {
     }
 
     while (!eof()) {
-      if (!Character.isOctalDigit(source.codeUnitAt(index))) break;
+      if (!character.isOctalDigit(source.codeUnitAt(index))) break;
 
       number += source[index++];
     }
@@ -691,12 +691,12 @@ class Scanner {
       throwUnexpectedToken();
     }
 
-    if (Character.isIdentifierStart(source.codeUnitAt(index)) ||
-        Character.isDecimalDigit(source.codeUnitAt(index)))
+    if (character.isIdentifierStart(source.codeUnitAt(index)) ||
+        character.isDecimalDigit(source.codeUnitAt(index)))
       throwUnexpectedToken();
 
     return new ScannedToken(
-        type: Token.NumericLiteral,
+        type: token_type.NumericLiteral,
         value: int.parse(number, radix: 8),
         octal: octal,
         lineNumber: lineNumber,
@@ -715,7 +715,7 @@ class Scanner {
         return false;
       }
 
-      if (!Character.isOctalDigit(ch.codeUnitAt(0))) {
+      if (!character.isOctalDigit(ch.codeUnitAt(0))) {
         return true;
       }
     }
@@ -726,7 +726,7 @@ class Scanner {
   ScannedToken scanNumericLiteral() {
     final start = index;
     String ch = source[start];
-    assertCondition(Character.isDecimalDigit(ch.codeUnitAt(0)) || (ch == '.'),
+    assertCondition(character.isDecimalDigit(ch.codeUnitAt(0)) || (ch == '.'),
         'Numeric literal must start with a decimal digit or a decimal point');
 
     String number = '';
@@ -754,14 +754,14 @@ class Scanner {
           return scanOctalLiteral(ch, start);
         }
 
-        if (ch.isNotEmpty && Character.isOctalDigit(ch.codeUnitAt(0))) {
+        if (ch.isNotEmpty && character.isOctalDigit(ch.codeUnitAt(0))) {
           if (isImplicitOctalLiteral()) {
             return scanOctalLiteral(ch, start);
           }
         }
       }
 
-      while (Character.isDecimalDigit(source.codeUnitAt(index))) {
+      while (character.isDecimalDigit(source.codeUnitAt(index))) {
         number += source[index++];
       }
 
@@ -771,7 +771,7 @@ class Scanner {
     if (ch == '.') {
       number += source[index++];
 
-      while (Character.isDecimalDigit(source.codeUnitAt(index))) {
+      while (character.isDecimalDigit(source.codeUnitAt(index))) {
         number += source[index];
       }
 
@@ -785,8 +785,8 @@ class Scanner {
 
       if (ch == '+' || ch == '-') number += source[index];
 
-      if (Character.isDecimalDigit(source.codeUnitAt(index))) {
-        while (Character.isDecimalDigit(source.codeUnitAt(index))) {
+      if (character.isDecimalDigit(source.codeUnitAt(index))) {
+        while (character.isDecimalDigit(source.codeUnitAt(index))) {
           number += source[index++];
         }
       } else {
@@ -794,12 +794,12 @@ class Scanner {
       }
     }
 
-    if (Character.isIdentifierStart(source.codeUnitAt(index))) {
+    if (character.isIdentifierStart(source.codeUnitAt(index))) {
       throwUnexpectedToken();
     }
 
     return new ScannedToken(
-        type: Token.NumericLiteral,
+        type: token_type.NumericLiteral,
         value: double.parse(number),
         lineNumber: lineNumber,
         lineStart: lineStart,
@@ -827,7 +827,7 @@ class Scanner {
       } else if (ch == '\\') {
         ch == source[index++];
 
-        if (ch.isEmpty || !Character.isLineTerminator(ch.codeUnitAt(0))) {
+        if (ch.isEmpty || !character.isLineTerminator(ch.codeUnitAt(0))) {
           switch (ch) {
             case 'u':
             case 'x':
@@ -868,7 +868,7 @@ class Scanner {
               break;
 
             default:
-              if (ch.isNotEmpty && Character.isOctalDigit(ch.codeUnitAt(0))) {
+              if (ch.isNotEmpty && character.isOctalDigit(ch.codeUnitAt(0))) {
                 final octToDec = octalToDecimal(ch);
 
                 octal = octToDec.octal || octal;
@@ -886,7 +886,7 @@ class Scanner {
 
           lineStart = index;
         }
-      } else if (Character.isLineTerminator(ch.codeUnitAt(0))) {
+      } else if (character.isLineTerminator(ch.codeUnitAt(0))) {
         break;
       } else {
         str += ch;
@@ -899,7 +899,7 @@ class Scanner {
     }
 
     return new ScannedToken(
-        type: Token.StringLiteral,
+        type: token_type.StringLiteral,
         value: str,
         octal: octal,
         lineNumber: lineNumber,
@@ -935,7 +935,7 @@ class Scanner {
       } else if (ch == '\\') {
         ch = source[index++];
 
-        if (!Character.isLineTerminator(ch.codeUnitAt(0))) {
+        if (!character.isLineTerminator(ch.codeUnitAt(0))) {
           switch (ch) {
             case 'n':
               cooked += '\n';
@@ -976,14 +976,14 @@ class Scanner {
 
             default:
               if (ch == '0') {
-                if (Character.isDecimalDigit(source.codeUnitAt(index))) {
+                if (character.isDecimalDigit(source.codeUnitAt(index))) {
                   // Illegal: \01 \02 and so on
-                  throwUnexpectedToken(Messages.TemplateOctalLiteral);
+                  throwUnexpectedToken(messages.TemplateOctalLiteral);
                 }
                 cooked += '\0';
-              } else if (Character.isOctalDigit(ch.codeUnitAt(0))) {
+              } else if (character.isOctalDigit(ch.codeUnitAt(0))) {
                 // Illegal: \1 \2
-                throwUnexpectedToken(Messages.TemplateOctalLiteral);
+                throwUnexpectedToken(messages.TemplateOctalLiteral);
               } else {
                 cooked += ch;
               }
@@ -999,7 +999,7 @@ class Scanner {
 
           lineStart = index;
         }
-      } else if (Character.isLineTerminator(ch.codeUnitAt(0))) {
+      } else if (character.isLineTerminator(ch.codeUnitAt(0))) {
         lineNumber++;
 
         if (ch == '\r' && source[index] == '\n') index++;
@@ -1016,7 +1016,7 @@ class Scanner {
     if (!head) curlyStack.removeLast();
 
     return new ScannedToken(
-        type: Token.Template,
+        type: token_type.Template,
         value: new ScannedTemplate(
             cooked: cooked,
             raw: source.substring(start + 1, index - rawOffset)),
@@ -1049,7 +1049,7 @@ class Scanner {
             (match[1] != null && match[1].isNotEmpty) ? match[1] : match[2],
             radix: 16);
 
-        if (codePoint > 0x10FFFF) throwUnexpectedToken(Messages.InvalidRegExp);
+        if (codePoint > 0x10FFFF) throwUnexpectedToken(messages.InvalidRegExp);
 
         if (codePoint <= 0xFFFF) return new String.fromCharCode(codePoint);
 
@@ -1066,7 +1066,7 @@ class Scanner {
     try {
       new RegExp(tmp);
     } catch (e) {
-      throwUnexpectedToken(Messages.InvalidRegExp);
+      throwUnexpectedToken(messages.InvalidRegExp);
     }
 
     // Return a regular expression object for this pattern-flag pair, or
@@ -1097,12 +1097,12 @@ class Scanner {
         ch = source[index++];
 
         // ECMA-262 7.8.5
-        if (Character.isLineTerminator(ch.codeUnitAt(0)))
-          throwUnexpectedToken(Messages.UnterminatedRegExp);
+        if (character.isLineTerminator(ch.codeUnitAt(0)))
+          throwUnexpectedToken(messages.UnterminatedRegExp);
 
         str += ch;
-      } else if (Character.isLineTerminator(ch.codeUnitAt(0))) {
-        throwUnexpectedToken(Messages.UnterminatedRegExp);
+      } else if (character.isLineTerminator(ch.codeUnitAt(0))) {
+        throwUnexpectedToken(messages.UnterminatedRegExp);
       } else if (classMarker) {
         if (ch == ']') classMarker = false;
       } else {
@@ -1115,7 +1115,7 @@ class Scanner {
       }
     }
 
-    if (!terminated) throwUnexpectedToken(Messages.UnterminatedRegExp);
+    if (!terminated) throwUnexpectedToken(messages.UnterminatedRegExp);
 
     // Exclude leading and trailing slash.
     final body = str.substring(1, str.length - 2);
@@ -1129,7 +1129,7 @@ class Scanner {
     while (!eof()) {
       String ch = source[index];
 
-      if (!Character.isIdentifierPart(ch.codeUnitAt(0))) break;
+      if (!character.isIdentifierPart(ch.codeUnitAt(0))) break;
 
       index++;
 
@@ -1174,7 +1174,7 @@ class Scanner {
     final value = testRegExp(body.value, flags.value);
 
     return new ScannedToken(
-        type: Token.RegularExpression,
+        type: token_type.RegularExpression,
         value: value,
         literal: body.literal + flags.literal,
         regExp: new RegExp(body.value,
@@ -1189,7 +1189,7 @@ class Scanner {
   ScannedToken lex() {
     if (eof()) {
       return new ScannedToken(
-          type: Token.EOF,
+          type: token_type.EOF,
           lineNumber: lineNumber,
           lineStart: lineStart,
           start: index,
@@ -1198,7 +1198,7 @@ class Scanner {
 
     final cp = source.codeUnitAt(index);
 
-    if (Character.isIdentifierPart(cp)) {
+    if (character.isIdentifierPart(cp)) {
       return scanIdentifier();
     }
 
@@ -1215,14 +1215,14 @@ class Scanner {
     // Dot (.) U+002E can also start a floating-point number, hence the need
     // to check the next character.
     if (cp == 0x2E) {
-      if (Character.isDecimalDigit(source.codeUnitAt(this.index + 1))) {
+      if (character.isDecimalDigit(source.codeUnitAt(this.index + 1))) {
         return scanNumericLiteral();
       }
 
       return scanPunctuator();
     }
 
-    if (Character.isDecimalDigit(cp)) return scanNumericLiteral();
+    if (character.isDecimalDigit(cp)) return scanNumericLiteral();
 
     // Template literals start with ` (U+0060) for template head
     // or } (U+007D) for template middle or template tail.
@@ -1232,7 +1232,7 @@ class Scanner {
 
     // Possible identifier start in a surrogate pair.
     if (cp >= 0xD800 && cp < 0xDFFF) {
-      if (Character.isIdentifierStart(codePointAt(index)))
+      if (character.isIdentifierStart(codePointAt(index)))
         return scanIdentifier();
     }
 

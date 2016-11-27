@@ -26,15 +26,13 @@
 library esprima;
 
 import 'src/comment_handler.dart' show CommentHandler;
-import 'src/jsx_parser.dart' show JSXParser;
+import 'src/jsx_parser.dart' show JsxParser;
 import 'src/options.dart';
 import 'src/parser.dart' show Parser;
 import 'src/scanner.dart' show Comment;
-import 'src/source_type.dart';
+import 'src/source_type.dart' as source_type;
 import 'src/tokenizer.dart' show TokenizationResult, Tokenizer;
 export 'src/options.dart';
-export 'src/source_type.dart';
-export 'src/syntax.dart';
 
 /// Sync with *.json manifests.
 const String VERSION = '3.1.2';
@@ -65,11 +63,11 @@ parse(String code, {EsprimaOptions options, Function delegate}) {
     }
   }
 
-  bool isModule = options != null && options.sourceType == SourceType.MODULE;
+  bool isModule = options != null && options.sourceType == source_type.MODULE;
   Parser parser;
 
   if (options != null && options.jsx) {
-    parser = new JSXParser(code, options, parserDelegate);
+    parser = new JsxParser(code, options, parserDelegate);
   } else {
     parser = new Parser(code, options, parserDelegate);
   }
@@ -91,7 +89,7 @@ parse(String code, {EsprimaOptions options, Function delegate}) {
 
 parseModule(String code, {EsprimaOptions options, Function delegate}) {
   final parsingOptions = options ?? new EsprimaOptions();
-  parsingOptions.sourceType = SourceType.MODULE;
+  parsingOptions.sourceType = source_type.MODULE;
   return parse(code, options: parsingOptions, delegate: delegate);
 }
 

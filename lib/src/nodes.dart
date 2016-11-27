@@ -1,45 +1,56 @@
 import 'comment_handler.dart' show Comment;
-import "syntax.dart" show Syntax;
+import 'scanner.dart' show ScannedTemplate;
+import 'syntax.dart' as syntax;
 
 // Todo: Look through interfaces for shared fields ;)
 class Node {
-  final List<Comment> leadingComments = [], trailingComments = [];
+  List<Comment> get leadingComments => [];
+  List<Comment> get trailingComments => [];
 
-  List get body => [];
-
-  String get type;
+  String get type => null;
 }
 
-abstract class ArgumentListElement extends Node {}
+class _NodeImpl implements Node {
+  @override
+  final List<Comment> leadingComments = [], trailingComments = [];
 
-abstract class ArrayExpressionElement extends Node {}
+  @override
+  String get type => null;
+}
 
-abstract class ArrayPatternElement extends Node {}
+abstract class ArgumentListElement implements Node {}
 
-abstract class BindingPattern extends Node {}
+abstract class ArrayExpressionElement implements Node {}
 
-abstract class BindingIdentifier extends Node {}
+abstract class ArrayPatternElement implements Node {}
 
-abstract class Declaration extends Node {}
+abstract class BindingPattern
+    implements ArrayPatternElement, FunctionParameter {}
 
-abstract class ExportDeclaration extends Node {}
+abstract class BindingIdentifier
+    implements ArrayPatternElement, FunctionParameter, PropertyValue {}
 
-abstract class Expression extends Node implements ArgumentListElement, ArrayExpressionElement {}
+abstract class Declaration implements Node, Statement {}
 
-abstract class FunctionParameter extends Node {}
+abstract class ExportDeclaration implements Declaration {}
 
-abstract class ImportDeclarationSpecifier extends Node {}
+abstract class Expression
+    implements ArgumentListElement, ArrayExpressionElement {}
 
-abstract class Statement extends Node {}
+abstract class FunctionParameter implements Node {}
 
-abstract class PropertyKey extends Node {}
+abstract class ImportDeclarationSpecifier implements Node {}
 
-abstract class PropertyValue extends Node {}
+abstract class Statement implements Node, StatementListItem {}
 
-abstract class StatementListItem extends Node {}
+abstract class PropertyKey implements Node {}
 
-class ArrayExpression extends Expression {
-  final String type = Syntax.ArrayExpression;
+abstract class PropertyValue implements Node {}
+
+abstract class StatementListItem implements Node {}
+
+class ArrayExpression extends _NodeImpl implements Expression {
+  final String type = syntax.ArrayExpression;
   final List<ArrayExpressionElement> elements = [];
 
   ArrayExpression({List<ArrayExpressionElement> elements: const []}) {
@@ -47,8 +58,9 @@ class ArrayExpression extends Expression {
   }
 }
 
-class ArrayPattern extends ArrayPatternElement {
-  final String type = Syntax.ArrayPattern;
+class ArrayPattern extends _NodeImpl
+    implements ArrayPatternElement, BindingPattern {
+  final String type = syntax.ArrayPattern;
   final List<ArrayPatternElement> elements = [];
 
   ArrayPattern({List<ArrayPatternElement> elements: const []}) {
@@ -56,27 +68,33 @@ class ArrayPattern extends ArrayPatternElement {
   }
 }
 
-class ArrowFunctionExpression extends Expression {
-  final String type = Syntax.ArrowFunctionExpression;
+class ArrowFunctionExpression extends _NodeImpl implements Expression {
+  final String type = syntax.ArrowFunctionExpression;
   Identifier id;
+  final List<Expression> defaults = [];
   final List<FunctionParameter> params = [];
   var body;
   bool generator;
   bool expression;
+  Identifier rest;
 
   ArrowFunctionExpression({
     this.id,
     this.body,
     this.expression: false,
     this.generator,
-    List<FunctionParameter> params: const [],
+    this.rest,
+    List<Expression> defaults: const [],
+    List<FunctionParameter> params: const []
   }) {
+    if (defaults != null) this.defaults.addAll(defaults);
     if (params != null) this.params.addAll(params);
   }
 }
 
-class AssignmentExpression extends Expression {
-  final String type = Syntax.AssignmentExpression;
+class AssignmentExpression extends _NodeImpl
+    implements Expression, PropertyValue {
+  final String type = syntax.AssignmentExpression;
   String operator;
   Expression left;
   Expression right;
@@ -84,15 +102,17 @@ class AssignmentExpression extends Expression {
   AssignmentExpression({this.operator, this.left, this.right});
 }
 
-class AssignmentPattern {
-  final String type = Syntax.AssignmentPattern;
+class AssignmentPattern extends _NodeImpl
+    implements ArrayPatternElement, FunctionParameter {
+  final String type = syntax.AssignmentPattern;
   dynamic left;
   Expression right;
-  
+
   AssignmentPattern({this.left, this.right});
 }
 
-class BinaryExpression {
+// Todo: Try to make this into two different classes?
+class BinaryExpression extends _NodeImpl implements Expression {
   String _type;
   String get type => _type;
   String operator;
@@ -101,12 +121,12 @@ class BinaryExpression {
 
   BinaryExpression({this.left, this.operator, this.right}) {
     final logical = (identical(operator, "||") || identical(operator, "&&"));
-    _type = logical ? Syntax.LogicalExpression : Syntax.BinaryExpression;
+    _type = logical ? syntax.LogicalExpression : syntax.BinaryExpression;
   }
 }
 
-class BlockStatement {
-  final String type = Syntax.BlockStatement;
+class BlockStatement extends _NodeImpl implements Statement {
+  final String type = syntax.BlockStatement;
   List<Statement> body;
 
   BlockStatement({List<Statement> body: const []}) {
@@ -114,44 +134,42 @@ class BlockStatement {
   }
 }
 
-class BreakStatement {
-  final String type = Syntax.BreakStatement;
+class BreakStatement extends _NodeImpl implements Statement {
+  final String type = syntax.BreakStatement;
   Identifier label;
 
   BreakStatement({this.label});
 }
 
-class CallExpression {
-  final String type = Syntax.CallExpression;
+class CallExpression extends _NodeImpl implements Expression {
+  final String type = syntax.CallExpression;
   Expression callee;
   List<ArgumentListElement> arguments;
 
   CallExpression({this.callee, List<ArgumentListElement> arguments: const []}) {
-    if (arguments != null)
-    this.arguments.addAll(arguments);
+    if (arguments != null) this.arguments.addAll(arguments);
   }
 }
 
-class CatchClause {
-  final String type = Syntax.CatchClause;
+class CatchClause extends _NodeImpl {
+  final String type = syntax.CatchClause;
   dynamic param;
   BlockStatement body;
 
   CatchClause({this.body, this.param});
 }
 
-class ClassBody {
-  final String type = Syntax.ClassBody;
+class ClassBody extends _NodeImpl {
+  final String type = syntax.ClassBody;
   List<Property> body;
 
   ClassBody({List<Property> body: const []}) {
-    if (body != null)
-      this.body.addAll(body);
+    if (body != null) this.body.addAll(body);
   }
 }
 
-class ClassDeclaration {
-  final String type = Syntax.ClassDeclaration;
+class ClassDeclaration extends _NodeImpl implements Declaration {
+  final String type = syntax.ClassDeclaration;
   Identifier id;
   Identifier superClass;
   ClassBody body;
@@ -159,8 +177,8 @@ class ClassDeclaration {
   ClassDeclaration({this.id, this.superClass, this.body});
 }
 
-class ClassExpression {
-  final String type = Syntax.ClassExpression;
+class ClassExpression extends _NodeImpl implements Expression {
+  final String type = syntax.ClassExpression;
   Identifier id;
   Identifier superClass;
   ClassBody body;
@@ -168,17 +186,17 @@ class ClassExpression {
   ClassExpression({this.id, this.superClass, this.body});
 }
 
-class ComputedMemberExpression {
-  final String type = Syntax.MemberExpression;
+class ComputedMemberExpression extends _NodeImpl implements Expression {
+  final String type = syntax.MemberExpression;
   bool computed;
   Expression object;
   Expression property;
 
-  ComputedMemberExpression({this.object, this.property, this.computed : true});
+  ComputedMemberExpression({this.object, this.property, this.computed: true});
 }
 
-class ConditionalExpression {
-  final String type = Syntax.ConditionalExpression;
+class ConditionalExpression extends _NodeImpl implements Expression {
+  final String type = syntax.ConditionalExpression;
   Expression test;
   Expression consequent;
   Expression alternate;
@@ -186,98 +204,100 @@ class ConditionalExpression {
   ConditionalExpression({this.test, this.consequent, this.alternate});
 }
 
-class ContinueStatement {
-  final String type = Syntax.ContinueStatement;
+class ContinueStatement extends _NodeImpl implements Statement {
+  final String type = syntax.ContinueStatement;
   Identifier label;
 
   ContinueStatement({this.label});
 }
 
-class DebuggerStatement {
-  final String type = Syntax.DebuggerStatement;
+class DebuggerStatement extends _NodeImpl implements Statement {
+  final String type = syntax.DebuggerStatement;
 }
 
-class Directive {
-  final String type = Syntax.ExpressionStatement;
+class Directive extends _NodeImpl implements Statement {
+  final String type = syntax.ExpressionStatement;
   Expression expression;
   String directive;
 
   Directive({this.expression, this.directive});
 }
 
-class DoWhileStatement {
-  final String type = Syntax.DoWhileStatement;
+class DoWhileStatement extends _NodeImpl implements Statement {
+  final String type = syntax.DoWhileStatement;
   Statement body;
   Expression test;
 
   DoWhileStatement({this.body, this.test});
 }
 
-class EmptyStatement {
-  final String type = Syntax.EmptyStatement;
+class EmptyStatement extends _NodeImpl implements Statement {
+  final String type = syntax.EmptyStatement;
 }
 
-class ExportAllDeclaration {
-  final String type = Syntax.ExportAllDeclaration;
+class ExportAllDeclaration extends _NodeImpl implements ExportDeclaration {
+  final String type = syntax.ExportAllDeclaration;
   Literal source;
 
   ExportAllDeclaration({this.source});
 }
 
-class ExportDefaultDeclaration {
-  final String type = Syntax.ExportDefaultDeclaration;
+class ExportDefaultDeclaration extends _NodeImpl implements ExportDeclaration {
+  final String type = syntax.ExportDefaultDeclaration;
   dynamic declaration;
 
   ExportDefaultDeclaration({this.declaration});
 }
 
-class ExportNamedDeclaration {
-  final String type = Syntax.ExportNamedDeclaration;
+class ExportNamedDeclaration extends _NodeImpl implements ExportDeclaration {
+  final String type = syntax.ExportNamedDeclaration;
   dynamic declaration;
   final List<ExportSpecifier> specifiers = [];
   Literal source;
 
-  ExportNamedDeclaration({this.declaration, this.source, List<ExportSpecifier> specifiers: const []}) {
-    if (specifiers != null)
-      this.specifiers.addAll(specifiers);
+  ExportNamedDeclaration(
+      {this.declaration,
+      this.source,
+      List<ExportSpecifier> specifiers: const []}) {
+    if (specifiers != null) this.specifiers.addAll(specifiers);
   }
 }
 
 class ExportSpecifier {
-  final String type = Syntax.ExportSpecifier;
+  final String type = syntax.ExportSpecifier;
   Identifier exported;
   Identifier local;
 
   ExportSpecifier({this.local, this.exported});
 }
 
-class ExpressionStatement {
-  final String type = Syntax.ExpressionStatement;
+class ExpressionStatement extends _NodeImpl implements Statement {
+  final String type = syntax.ExpressionStatement;
   Expression expression;
 
   ExpressionStatement({this.expression});
 }
 
-class ForInStatement {
-  final String type = Syntax.ForInStatement;
+class ForInStatement extends _NodeImpl implements Statement {
+  final String type = syntax.ForInStatement;
   Expression left;
   Expression right;
   Statement body;
   bool each;
 
-  ForInStatement({this.body, this.each : false, this.left, this.right});
+  ForInStatement({this.body, this.each: false, this.left, this.right});
 }
 
-class ForOfStatement {
-  final String type = Syntax.ForOfStatement;
+class ForOfStatement extends _NodeImpl implements Statement {
+  final String type = syntax.ForOfStatement;
   Expression left;
   Expression right;
   Statement body;
   ForOfStatement({this.body, this.left, this.right});
 }
 
-class ForStatement {
-  final String type = Syntax.ForOfStatement;
+class ForStatement extends _NodeImpl implements Statement {
+  final String type = syntax.ForOfStatement;
   Expression init;
   Expression test;
   Expression update;
@@ -286,139 +306,150 @@ class ForStatement {
   ForStatement({this.init, this.test, this.update, this.body});
 }
 
-class FunctionDeclaration {
-  final String type;
+// Todo: Change all lower to named params? Actually, change each one as you use it. ;)
+class FunctionDeclaration extends _NodeImpl implements Declaration, Statement {
+  final String type = syntax.FunctionDeclaration;
   Identifier id;
-  List<FunctionParameter> params;
+  final List<FunctionParameter> params = [];
   BlockStatement body;
+  final List<Expression> defaults = [];
   bool generator;
   bool expression;
-  FunctionDeclaration(Identifier id, List<FunctionParameter> params,
-      BlockStatement body, bool generator) {
-    
-    this.id = id;
-    this.params = params;
-    this.body = body;
-    this.generator = generator;
-    this.expression = false;
+  Identifier rest;
+
+  FunctionDeclaration(
+      {this.id,
+      this.body,
+      this.generator,
+      this.expression: true,
+      this.rest,
+      List<Expression> defaults: const [],
+      List<FunctionParameter> params: const []}) {
+    if (defaults != null) this.defaults.addAll(defaults);
+    if (params != null) this.params.addAll(params);
   }
 }
 
-class FunctionExpression {
-  final String type;
+class FunctionExpression extends _NodeImpl
+    implements Expression, PropertyValue {
+  final String type = syntax.FunctionExpression;
   Identifier id;
-  List<FunctionParameter> params;
+  final List<Expression> defaults = [];
+  final List<FunctionParameter> params = [];
   BlockStatement body;
   bool generator;
   bool expression;
-  FunctionExpression(Identifier id, List<FunctionParameter> params,
-      BlockStatement body, bool generator) {
-    
-    this.id = id;
-    this.params = params;
-    this.body = body;
-    this.generator = generator;
-    this.expression = false;
+  Identifier rest;
+
+  FunctionExpression(
+      {this.id,
+      this.body,
+      this.generator,
+      this.expression,
+      this.rest,
+      List<Expression> defaults: const [],
+      List<FunctionParameter> params: const []}) {
+    if (defaults != null) this.defaults.addAll(defaults);
+    if (params != null) this.params.addAll(params);
   }
 }
 
-class Identifier {
-  final String type;
+class Identifier extends _NodeImpl
+    implements BindingIdentifier, Expression, PropertyKey {
+  final String type = syntax.Identifier;
   String name;
-  Identifier(name) {
-    
-    this.name = name;
-  }
+
+  Identifier({this.name});
 }
 
-class IfStatement {
-  final String type;
+class IfStatement extends _NodeImpl implements Statement {
+  final String type = syntax.IfStatement;
   Expression test;
   Statement consequent;
   Statement alternate;
-  IfStatement(Expression test, Statement consequent, Statement alternate) {
-    
-    this.test = test;
-    this.consequent = consequent;
-    this.alternate = alternate;
-  }
+
+  IfStatement({this.alternate, this.consequent, this.test});
 }
 
-class ImportDeclaration {
-  final String type;
-  List<ImportDeclarationSpecifier> specifiers;
+class ImportDeclaration extends _NodeImpl implements Declaration {
+  final String type = syntax.ImportDeclaration;
+  final List<ImportDeclarationSpecifier> specifiers = [];
   Literal source;
-  ImportDeclaration(specifiers, source) {
-    
-    this.specifiers = specifiers;
+
+  ImportDeclaration(List<ImportDeclarationSpecifier> specifiers, source) {
+    this.specifiers.addAll(specifiers);
     this.source = source;
   }
 }
 
-class ImportDefaultSpecifier {
-  final String type;
+class ImportDefaultSpecifier extends _NodeImpl
+    implements ImportDeclarationSpecifier {
+  final String type = syntax.ImportDefaultSpecifier;
   Identifier local;
   ImportDefaultSpecifier(Identifier local) {
-    
     this.local = local;
   }
 }
 
-class ImportNamespaceSpecifier {
-  final String type;
+class ImportNamespaceSpecifier extends _NodeImpl
+    implements ImportDeclarationSpecifier {
+  final String type = syntax.ImportNamespaceSpecifier;
   Identifier local;
   ImportNamespaceSpecifier(Identifier local) {
-    
     this.local = local;
   }
 }
 
-class ImportSpecifier {
-  final String type;
+class ImportSpecifier extends _NodeImpl implements ImportDeclarationSpecifier {
+  final String type = syntax.ImportSpecifier;
   Identifier local;
   Identifier imported;
   ImportSpecifier(Identifier local, Identifier imported) {
-    
     this.local = local;
     this.imported = imported;
   }
 }
 
-class LabeledStatement {
-  final String type;
+class LabeledStatement extends _NodeImpl implements Statement {
+  final String type = syntax.LabeledStatement;
   Identifier label;
   Statement body;
   LabeledStatement(Identifier label, Statement body) {
-    
     this.label = label;
     this.body = body;
   }
 }
 
-class Literal {
-  final String type;
+class Literal extends _NodeImpl implements Expression, PropertyKey {
+  final String type = syntax.Literal;
   dynamic value;
   String raw;
-  Literal(dynamic value, String raw) {
-    
-    this.value = value;
-    this.raw = raw;
+
+  Literal({this.value, this.raw});
+}
+
+class LetStatement extends _NodeImpl implements Statement {
+  final String type = syntax.LetStatement;
+  final List<VariableDeclarator> head = [];
+  Statement body;
+
+  LetStatement({this.body, List<VariableDeclarator> head: const []}) {
+    if (head != null) this.head.addAll(head);
   }
 }
 
 class MetaProperty {
-  final String type;
+  final String type = syntax.MetaProperty;
   Identifier meta;
   Identifier property;
   MetaProperty(Identifier meta, Identifier property) {
-    
     this.meta = meta;
     this.property = property;
   }
 }
 
 class MethodDefinition {
-  final String type;
+  final String type = syntax.MethodDefinition;
   Expression key;
   bool computed;
   FunctionExpression value;
@@ -426,7 +457,6 @@ class MethodDefinition {
   bool static;
   MethodDefinition(Expression key, bool computed, FunctionExpression value,
       String kind, bool isStatic) {
-    
     this.key = key;
     this.computed = computed;
     this.value = value;
@@ -435,300 +465,258 @@ class MethodDefinition {
   }
 }
 
-class NewExpression {
-  final String type;
+class NewExpression extends _NodeImpl implements Expression {
+  final String type = syntax.NewExpression;
   Expression callee;
-  List<ArgumentListElement> arguments;
-  NewExpression(Expression callee, List<ArgumentListElement> args) {
-    
-    this.callee = callee;
-    this.arguments = args;
+  final List<ArgumentListElement> arguments = [];
+
+  NewExpression({this.callee, List<ArgumentListElement> args: const []}) {
+    if (args != null)
+      this.arguments.addAll(args);
   }
 }
 
-class ObjectExpression {
-  final String type;
-  List<Property> properties;
-  ObjectExpression(List<Property> properties) {
-    
-    this.properties = properties;
+class ObjectExpression extends _NodeImpl implements Expression {
+  final String type = syntax.ObjectExpression;
+  final List<Property> properties = [];
+
+  ObjectExpression({List<Property> properties: const []}){
+    if (properties != null)
+      this.properties.addAll(properties);
   }
 }
 
-class ObjectPattern {
-  final String type;
-  List<Property> properties;
-  ObjectPattern(List<Property> properties) {
-    
-    this.properties = properties;
+class ObjectPattern extends _NodeImpl implements BindingPattern {
+  final String type = syntax.ObjectPattern;
+  final List<Property> properties = [];
+
+  ObjectPattern({List<Property> properties: const []}) {
+    if (properties != null)
+      this.properties.addAll(properties);
   }
 }
 
-class Program {
-  final String type;
-  List<StatementListItem> body;
+class Program extends _NodeImpl {
+  final String type = syntax.Program;
+  final List<StatementListItem> body = [];
   String sourceType;
-  Program(List<StatementListItem> body, String sourceType) {
-    
-    this.body = body;
-    this.sourceType = sourceType;
+
+  Program({this.sourceType, List<StatementListItem> body: const []}) {
+    if (body != null) this.body.addAll(body);
   }
 }
 
-class Property {
-  final String type;
+class Property extends _NodeImpl {
+  static const String GET = 'get';
+  static const String INIT = 'init';
+  static const String SET = 'set';
+
+  final String type = syntax.Property;
   PropertyKey key;
   bool computed;
   PropertyValue value;
   String kind;
   bool method;
   bool shorthand;
-  Property(String kind, PropertyKey key, bool computed, PropertyValue value,
-      bool method, bool shorthand) {
-    
-    this.key = key;
-    this.computed = computed;
-    this.value = value;
-    this.kind = kind;
-    this.method = method;
-    this.shorthand = shorthand;
-  }
+
+  Property({this.key, this.computed, this.value, this.kind, this.method, this.shorthand});
 }
 
-class RegexLiteral {
-  final String type;
+class RegexLiteral extends _NodeImpl implements Expression {
+  final String type = syntax.Literal;
   String value;
   String raw;
   dynamic regex;
   RegexLiteral(String value, String raw, regex) {
-    
     this.value = value;
     this.raw = raw;
     this.regex = regex;
   }
 }
 
-class RestElement {
-  final String type;
+class RestElement extends _NodeImpl implements ArrayPatternElement {
+  final String type = syntax.RestElement;
   Identifier argument;
   RestElement(Identifier argument) {
-    
     this.argument = argument;
   }
 }
 
-class ReturnStatement {
-  final String type;
+class ReturnStatement extends _NodeImpl implements Statement {
+  final String type = syntax.ReturnStatement;
   Expression argument;
-  ReturnStatement(Expression argument) {
-    
-    this.argument = argument;
+
+  ReturnStatement({this.argument});
+}
+
+class SequenceExpression extends _NodeImpl implements Expression {
+  final String type = syntax.SequenceExpression;
+  final List<Expression> expressions = [];
+  SequenceExpression({List<Expression> expressions: const []}) {
+    if (expressions != null)
+      this.expressions.addAll(expressions);
   }
 }
 
-class SequenceExpression {
-  final String type;
-  List<Expression> expressions;
-  SequenceExpression(List<Expression> expressions) {
-    
-    this.expressions = expressions;
-  }
-}
-
-class SpreadElement extends ArrayExpressionElement, ArgumentListElement {
-  final String type;
+class SpreadElement extends _NodeImpl
+    implements ArrayExpressionElement, ArgumentListElement {
+  final String type = syntax.SpreadElement;
   final Expression argument;
   SpreadElement({this.argument});
 }
 
-class StaticMemberExpression {
-  final String type;
+class StaticMemberExpression extends _NodeImpl implements Expression {
+  final String type = syntax.MemberExpression;
   bool computed;
   Expression object;
   Expression property;
-  StaticMemberExpression(Expression object, Expression property) {
-    
-    this.computed = false;
-    this.object = object;
-    this.property = property;
-  }
+
+  StaticMemberExpression({this.computed: false, this.object, this.property});
 }
 
-class Super {
-  final String type;
-  Super() {
-    
-  }
+class Super extends _NodeImpl {
+  final String type = syntax.Super;
+  Super();
 }
 
-class SwitchCase {
-  final String type;
+class SwitchCase extends _NodeImpl {
+  final String type = syntax.SwitchCase;
   Expression test;
-  List<Statement> consequent;
-  SwitchCase(Expression test, List<Statement> consequent) {
-    
-    this.test = test;
-    this.consequent = consequent;
+  final List<Statement> consequent = [];
+
+  SwitchCase({this.test, List<Statement> consequent}) {
+    if (consequent != null)
+      this.consequent.addAll(consequent);
   }
 }
 
-class SwitchStatement {
-  final String type;
+class SwitchStatement extends _NodeImpl implements Statement {
+  final String type = syntax.SwitchStatement;
   Expression discriminant;
-  List<SwitchCase> cases;
-  SwitchStatement(Expression discriminant, List<SwitchCase> cases) {
-    
-    this.discriminant = discriminant;
-    this.cases = cases;
+  final List<SwitchCase> cases = [];
+
+  SwitchStatement({this.discriminant, List<SwitchCase> cases: const []}) {
+    if (cases != null) this.cases.addAll(cases);
   }
 }
 
-class TaggedTemplateExpression {
-  final String type;
+class TaggedTemplateExpression extends _NodeImpl implements Expression {
+  final String type = syntax.TaggedTemplateExpression;
   Expression tag;
   TemplateLiteral quasi;
   TaggedTemplateExpression(Expression tag, TemplateLiteral quasi) {
-    
     this.tag = tag;
     this.quasi = quasi;
   }
 }
 
-class TemplateElementValue extends Node {
-  String cooked;
-  String raw;
-}
-
-class TemplateElement {
-  final String type;
-  TemplateElementValue value;
+class TemplateElement extends _NodeImpl {
+  final String type = syntax.TemplateElement;
+  ScannedTemplate value;
   bool tail;
-  TemplateElement(TemplateElementValue value, bool tail) {
-    
+  TemplateElement({this.value, this.tail}) {
     this.value = value;
     this.tail = tail;
   }
 }
 
-class TemplateLiteral {
-  final String type;
-  List<TemplateElement> quasis;
+class TemplateLiteral extends _NodeImpl {
+  final String type = syntax.TemplateLiteral;
+  final List<TemplateElement> quasis = [];
   List<Expression> expressions;
-  TemplateLiteral(List<TemplateElement> quasis, List<Expression> expressions) {
-    
-    this.quasis = quasis;
-    this.expressions = expressions;
+  TemplateLiteral(
+      {List<TemplateElement> quasis, List<Expression> expressions}) {
+    if (quasis != null) this.quasis.addAll(quasis);
+
+    if (expressions != null) this.expressions.addAll(expressions);
   }
 }
 
-class ThisExpression {
-  final String type;
-  ThisExpression() {
-    
-  }
+class ThisExpression extends _NodeImpl implements Expression {
+  final String type = syntax.ThisExpression;
 }
 
-class ThrowStatement {
-  final String type;
+class ThrowStatement extends _NodeImpl implements Statement {
+  final String type = syntax.ThrowStatement;
   Expression argument;
-  ThrowStatement(Expression argument) {
-    
-    this.argument = argument;
-  }
+
+  ThrowStatement({this.argument});
 }
 
-class TryStatement {
-  final String type;
+class TryStatement extends _NodeImpl implements Statement {
+  final String type = syntax.TryStatement;
   BlockStatement block;
+  final List<CatchClause> guardedHandlers = [];
   CatchClause handler;
   BlockStatement finalizer;
+
   TryStatement(
-      BlockStatement block, CatchClause handler, BlockStatement finalizer) {
-    
-    this.block = block;
-    this.handler = handler;
-    this.finalizer = finalizer;
+      {this.block,
+      this.handler,
+      this.finalizer,
+      List<CatchClause> guardedHandlers: const []}) {
+    if (guardedHandlers != null) this.guardedHandlers.addAll(guardedHandlers);
   }
 }
 
-class UnaryExpression {
-  final String type;
+class UnaryExpression extends _NodeImpl implements Expression {
+  final String type = syntax.UnaryExpression;
   String operator;
   Expression argument;
   bool prefix;
-  UnaryExpression(operator, argument) {
-    
-    this.operator = operator;
-    this.argument = argument;
-    this.prefix = true;
-  }
+  UnaryExpression({this.argument, this.operator, this.prefix: true});
 }
 
-class UpdateExpression {
-  final String type;
+class UpdateExpression extends _NodeImpl implements Expression {
+  final String type = syntax.UpdateExpression;
   String operator;
   Expression argument;
   bool prefix;
-  UpdateExpression(operator, argument, prefix) {
-    
-    this.operator = operator;
-    this.argument = argument;
-    this.prefix = prefix;
-  }
+  UpdateExpression({this.argument, this.operator, this.prefix: true});
 }
 
-class VariableDeclaration {
-  final String type;
-  List<VariableDeclarator> declarations;
+class VariableDeclaration extends _NodeImpl implements Declaration, Statement {
+  static const String CONST = 'const';
+  static const String LET = 'let';
+  static const String VAR = 'var';
+
+  final String type = syntax.VariableDeclaration;
+  final List<VariableDeclarator> declarations = [];
   String kind;
-  VariableDeclaration(List<VariableDeclarator> declarations, String kind) {
-    
-    this.declarations = declarations;
-    this.kind = kind;
+
+  VariableDeclaration({this.kind, List<VariableDeclarator> declarations}) {
+    if (declarations != null) this.declarations.addAll(declarations);
   }
 }
 
-class VariableDeclarator {
-  final String type;
-  dynamic id;
+class VariableDeclarator extends _NodeImpl {
+  final String type = syntax.VariableDeclarator;
+  BindingPattern id;
   Expression init;
-  VariableDeclarator(
-      dynamic id, Expression init) {
-    
-    this.id = id;
-    this.init = init;
-  }
+  VariableDeclarator({this.id, this.init});
 }
 
-class WhileStatement {
-  final String type;
+class WhileStatement extends _NodeImpl implements Statement {
+  final String type = syntax.WhileStatement;
   Expression test;
   Statement body;
-  WhileStatement(Expression test, Statement body) {
-    
-    this.test = test;
-    this.body = body;
-  }
+
+  WhileStatement({this.body, this.test});
 }
 
-class WithStatement {
-  final String type;
+class WithStatement extends _NodeImpl implements Statement {
+  final String type = syntax.WithStatement;
   Expression object;
   Statement body;
-  WithStatement(Expression object, Statement body) {
-    
-    this.object = object;
-    this.body = body;
-  }
+
+  WithStatement({this.body, this.object});
 }
 
-class YieldExpression {
-  final String type;
+// Todo: Default values for all bools
+class YieldExpression extends _NodeImpl implements Expression {
+  final String type = syntax.YieldExpression;
   Expression argument;
   bool delegate;
-  YieldExpression(Expression argument, bool delegate) {
-    
-    this.argument = argument;
-    this.delegate = delegate;
-  }
+
+  YieldExpression({this.argument, this.delegate: true});
 }
