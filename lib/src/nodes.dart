@@ -1,21 +1,17 @@
 import 'comment_handler.dart' show Comment;
+import 'scanner.dart' as scanner show Comment;
 import 'scanner.dart' show ScannedTemplate;
 import 'syntax.dart' as syntax;
 
 // Todo: Look through interfaces for shared fields ;)
-class Node {
+class Node extends scanner.Comment {
   List<Comment> get leadingComments => [];
   List<Comment> get trailingComments => [];
-
-  String get type => null;
 }
 
-class _NodeImpl implements Node {
+class _NodeImpl extends Node {
   @override
   final List<Comment> leadingComments = [], trailingComments = [];
-
-  @override
-  String get type => null;
 }
 
 abstract class ArgumentListElement implements Node {}

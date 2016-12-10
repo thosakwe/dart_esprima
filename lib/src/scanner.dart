@@ -60,14 +60,15 @@ class ScannedToken {
 
 class ScannedTokenLocation {
   ScannedTokenLocationPart end, start;
+  String source;
 
-  ScannedTokenLocation({this.end, this.start});
+  ScannedTokenLocation({this.end, this.start, this.source});
 }
 
 class ScannedTokenLocationPart {
-  final int line, column;
+  final int line, column, offset;
 
-  ScannedTokenLocationPart({this.line, this.column});
+  ScannedTokenLocationPart({this.line, this.column, this.offset});
 }
 
 class ScannedTemplate {
